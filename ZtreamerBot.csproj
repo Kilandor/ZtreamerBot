@@ -4,16 +4,24 @@
     <TargetFramework>net472</TargetFramework>
     <AssemblyName>ZtreamerBot</AssemblyName>
     <Description>My first plugin</Description>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugType>full</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="UnityEngine.Modules" Version="5.6.0" IncludeAssets="compile" />
-    <PackageReference Include="Zeepkist.GameLibs" Version="16.67.1694" />
+    <PackageReference Include="Zeepkist.GameLibs" Version="17.12.1825" />
     <PackageReference Include="ZeepSDK" Version="1.38.3" />
   </ItemGroup>
   
