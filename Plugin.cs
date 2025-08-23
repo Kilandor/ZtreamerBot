@@ -14,13 +14,9 @@ using ZeepSDK.Messaging;
 
 namespace ZtreamerBot
 {
-    [BepInPlugin(pluginGUID, pluginName, pluginVersion)]
+    [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string pluginGUID = "com.metalted.zeepkist.Ztreamerbot";
-        public const string pluginName = "Ztreamerbot";
-        public const string pluginVersion = "1.1";
-
         private Harmony harmony;
         public static Plugin Instance;
         public Action<string> StreamerBotUDPAction;
@@ -42,13 +38,13 @@ namespace ZtreamerBot
             Instance = this;
             ConfigSetup();
             
-            harmony = new Harmony(pluginGUID);
+            harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
             harmony.PatchAll();
 
             ScriptingApi.RegisterEvent<OnStreamerbotUDPEvent>();
             ScriptingApi.RegisterType<Dictionary<string, object>>();
 
-            Logger.LogInfo($"Plugin {pluginGUID} is loaded!");
+            Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
         }
         
         private void OnDestroy()
@@ -181,7 +177,20 @@ namespace ZtreamerBot
 
         public Dictionary<string, object> ParseUDPPayload(string json)
         {
-            return JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+            try
+            {
+                return JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+            }
+            catch (JsonException ex)
+            {
+                Logger.LogError($"JSON parse error: {ex.Message}\nPayload: {json}");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Unexpected error while parsing UDP payload: {ex.Message}");
+            }
+
+            return new Dictionary<string, object>();
         }
         
         [HarmonyPatch(typeof(MainMenuUI), nameof(MainMenuUI.Awake))]
