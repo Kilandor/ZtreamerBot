@@ -7,15 +7,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
-      https://api.nuget.org/v3/index.json;
-      https://nuget.bepinex.dev/v3/index.json;
-      https://nuget.samboy.dev/v3/index.json
+      https://nuget.bepinex.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <PackageId>com.kilandor.zeepkist.ztreamerbot</PackageId>
+    <PackageId>com.metalted.zeepkist.Ztreamerbot</PackageId>
     <Title>ZtreamerBot</Title>
     <Authors>Kilandor, Metalted</Authors>
     <Product>Ztreamerbot</Product>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
