@@ -3,16 +3,16 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <Description>Bring the power of UDP to Zeepkist to allow for events from things such as Streamerbot or other tools, to then integrate with a Zua script.</Description>
-    <Version>1.4.0</Version>
+    <Version>2.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
       https://nuget.bepinex.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <PackageId>com.metalted.zeepkist.Ztreamerbot</PackageId>
+    <PackageId>ZtreamerBot</PackageId>
     <Title>ZtreamerBot</Title>
     <Authors>Kilandor, Metalted</Authors>
-    <Product>Ztreamerbot</Product>
+    <Product>ZtreamerBot</Product>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

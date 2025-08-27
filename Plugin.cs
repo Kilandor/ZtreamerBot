@@ -8,6 +8,7 @@ using System.Threading;
 using ZeepSDK.Scripting.ZUA;
 using ZeepSDK.Scripting;
 using System.Collections.Generic;
+using BepInEx.Logging;
 using HarmonyLib;
 using Newtonsoft.Json;
 using ZeepSDK.Messaging;
@@ -19,13 +20,16 @@ namespace ZtreamerBot
     {
         private Harmony harmony;
         public static Plugin Instance;
+        public static ManualLogSource baseLogger;
+        
         public Action<string> StreamerBotUDPAction;
         public Thread udpListenerThread;
         public UdpClient udpClient;
         public CancellationTokenSource udpCancellationToken;
         public bool isAutoStarted = false;
 
-        public ConfigEntry<int> udpPort;
+        public ConfigEntry<int> udpListenPort;
+        public ConfigEntry<int> udpBroadcastPort;
         public ConfigEntry<bool> modEnabled;
         public ConfigEntry<bool> autoStart;
 
@@ -36,6 +40,7 @@ namespace ZtreamerBot
         private void Awake()
         {
             Instance = this;
+            baseLogger = Logger;
             ConfigSetup();
             
             harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -57,8 +62,10 @@ namespace ZtreamerBot
         {
             modEnabled = Config.Bind("1. General", "Plugin Enabled", true, "Is the plugin currently enabled?");
             modEnabled.SettingChanged += this.ModEnabled;
-            udpPort = Config.Bind("1. General", "UDP Port", 12345,
-                "The port to listen on. Should match the port defined in the UDP Broadcast Sub-Action from Streamerbot. Restart required to apply.");
+            udpListenPort = Config.Bind("1. General", "UDP Listen Port", 12333,
+                "The port to listen on. Should match the port defined in the UDP Broadcast Sub-Action in Streamerbot. Restart required to apply.");
+            udpBroadcastPort = Config.Bind("1. General", "UDP Broadcast Port", 12334,
+                "The port to broadcast on. Should match the port defined in the Server/Clients UDP Server in Streamerbot. Restart required to apply.");
             autoStart = Config.Bind("1. General", "Auto-Start when launching zeepkist", true,
                 "Auto-start server when when the game is starting");
 
@@ -68,7 +75,7 @@ namespace ZtreamerBot
             stopServer = Config.Bind("2. Server Controls", "Stop Server", false, "[Button] Stops the server.");
             stopServer.SettingChanged += this.StopServer;
 
-            //debugEnabled = Config.Bind("9. Dev / Debug", "Debug Logs", false, "Provides extra output in logs for troubleshooting.");
+            debugEnabled = Config.Bind("9. Dev / Debug", "Debug Logs", false, "Provides extra output in logs for troubleshooting.");
 
         }
 
@@ -76,7 +83,7 @@ namespace ZtreamerBot
         {
             if (!Plugin.Instance.modEnabled.Value)
             {
-                Logger.LogInfo($"Stopping server due to configuraiton being disabled.");
+                Utilities.Log($"Stopping server due to configuraiton being disabled.");
                 //Trick to cause the settingchange event to fire
                 stopServer.Value = !stopServer.Value;
             }
@@ -88,24 +95,24 @@ namespace ZtreamerBot
                 return;
             if (isAutoStarted)
             {
-                Logger.LogInfo($"UDP Listener auto-started.");
+                Utilities.Log($"UDP Listener auto-started.");
                 isAutoStarted = false;
             }
 
             if (udpClient != null)
             {
-                MessengerApi.LogError("[Ztreamerbot] UDP Listener is already running.");
-                Logger.LogInfo($"UDP Listener is already running.");
+                MessengerApi.LogError("UDP Listener is already running.");
+                Utilities.Log($"UDP Listener is already running.");
                 return;
             }
                 
             udpCancellationToken = new CancellationTokenSource();
-            udpListenerThread = new Thread(() => StartUdpListener(udpPort.Value, udpCancellationToken.Token));
+            udpListenerThread = new Thread(() => StartUdpListener(udpListenPort.Value, udpCancellationToken.Token));
             udpListenerThread.IsBackground = true;
             udpListenerThread.Start();
             
-            MessengerApi.LogSuccess("[Ztreamerbot] UDP Listener started.");
-            Logger.LogInfo($"UDP listener thread started on port {udpPort.Value}.");
+            MessengerApi.LogSuccess("UDP Listener started.");
+            Utilities.Log($"UDP listener thread started on port {udpListenPort.Value}.");
             
         }
         
@@ -113,8 +120,8 @@ namespace ZtreamerBot
         {
             if (udpClient == null)
             {
-                MessengerApi.LogError("[Ztreamerbot] UDP Listener is not running.");
-                Logger.LogInfo($"UDP Listener is not running.");
+                MessengerApi.LogError("UDP Listener is not running.");
+                Utilities.Log($"UDP Listener is not running.");
                 return;
             }
 
@@ -129,8 +136,8 @@ namespace ZtreamerBot
             udpClient?.Close();
             udpClient = null;
             
-            MessengerApi.LogSuccess("[Ztreamerbot] UDP Listener stopped.");
-            Logger.LogInfo($"UDP listener thread stopped.");
+            MessengerApi.LogSuccess("UDP Listener stopped.");
+            Utilities.Log($"UDP listener thread stopped.");
             
         }
 
@@ -159,19 +166,17 @@ namespace ZtreamerBot
             }
             catch (SocketException ex)
             {
-                MessengerApi.LogError("[Ztreamerbot] SocketException", 5);
-                Logger.LogError($"SocketException: {ex.Message}");
+                Utilities.Log($"SocketException: {ex.Message}", Utilities.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                //MessengerApi.LogError("[Ztreamerbot] Exception", 5);
-                Logger.LogError($"Exception: {ex.Message}");
+                Utilities.Log($"Exception: {ex.Message}", Utilities.LogLevel.Error);
             }
             finally
             {
                 udpClient?.Close();
                 udpClient = null;
-                Logger.LogInfo("UDP listener stopped.");
+                Utilities.Log("UDP listener stopped.");
             }
         }
 
@@ -183,11 +188,11 @@ namespace ZtreamerBot
             }
             catch (JsonException ex)
             {
-                Logger.LogError($"JSON parse error: {ex.Message}\nPayload: {json}");
+                Utilities.Log($"JSON parse error: {ex.Message}\nPayload: {json}", Utilities.LogLevel.Error);
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Unexpected error while parsing UDP payload: {ex.Message}");
+                Utilities.Log($"Unexpected error while parsing UDP payload: {ex.Message}", Utilities.LogLevel.Error);
             }
 
             return new Dictionary<string, object>();
@@ -203,7 +208,6 @@ namespace ZtreamerBot
                     Plugin.Instance.isAutoStarted = true;
                     //Trick to cause the settingchange event to fire
                     startServer.Value = !startServer.Value;
-                    //Logger.LogInfo($"UDP Listener auto-started.");
                 }
             }
         }
@@ -238,5 +242,40 @@ namespace ZtreamerBot
                 _streambotUDPAction = null;
             }
         }
+    }
+    
+    public static class UDPBroadcast
+    {
+        public static void Send<T>(T data)
+        {
+            try
+            {
+                if (data == null)
+                {
+                    Utilities.Log("Send() called with null data!", Utilities.LogLevel.Error);
+                    return;
+                }
+
+                string jsonString = JsonConvert.SerializeObject(data, Formatting.Indented);
+                byte[] datagram = Encoding.UTF8.GetBytes(jsonString);
+
+                using (var sender = new UdpClient())
+                {
+                    sender.EnableBroadcast = true;
+                    IPEndPoint broadcastEndpoint = new IPEndPoint(
+                        IPAddress.Broadcast,
+                        Plugin.Instance.udpBroadcastPort.Value
+                    );
+
+                    Utilities.Log($"\nSending broadcast message to {broadcastEndpoint}...", Utilities.LogLevel.Debug);
+                    sender.Send(datagram, datagram.Length, broadcastEndpoint);
+                }
+            }
+            catch (Exception ex)
+            {
+                Utilities.Log($"An error occurred while sending: {ex.Message}", Utilities.LogLevel.Error);
+            }
+        }
+
     }
 }
