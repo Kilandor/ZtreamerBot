@@ -16,6 +16,7 @@ using ZeepSDK.Messaging;
 namespace ZtreamerBot
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+    [BepInDependency("ZeepSDK")]
     public class Plugin : BaseUnityPlugin
     {
         private Harmony harmony;
